@@ -547,7 +547,7 @@ Write-host "   🔵 KeyVault"
 Write-host "      ➡️ Create KeyVault"
 
 #az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --output $azCliOutput	; commented for rbac
-az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --output $azCliOutput
+az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --tags "Owner=gaurav" "Created By=shobhit" "Created For=rfp" "Data Store Type=prod" "Environment=prod" "Project=rfp" "CreatedOnDate=14-11-25" --output $azCliOutput
 
 
 Write-host "      ➡️ Add Secrets"
