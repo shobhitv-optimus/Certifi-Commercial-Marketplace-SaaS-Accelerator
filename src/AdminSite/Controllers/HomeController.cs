@@ -290,7 +290,7 @@ public class HomeController : BaseController
                 {
                     Plans planDetail = allPlans.FirstOrDefault(p => p.PlanId == subscription.AmpplanId);
                     SubscriptionResultExtension subscriptionDetailExtension = this.subscriptionService.PrepareSubscriptionResponse(subscription, planDetail);
-                    subscriptionDetailExtension.IsPerUserPlan = planDetail.IsPerUser.HasValue ? planDetail.IsPerUser.Value : false;
+                    subscriptionDetailExtension.IsPerUserPlan = planDetail?.IsPerUser ?? false;
                     if (subscriptionDetailExtension != null && subscriptionDetailExtension.SubscribeId > 0)
                     {
                         allSubscriptions.Add(subscriptionDetailExtension);

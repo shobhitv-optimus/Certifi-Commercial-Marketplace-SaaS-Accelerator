@@ -153,6 +153,14 @@ public class SubscriptionService
             existingPlanDetail = this.planRepository.GetById(subscription.AmpplanId);
         }
 
+        var startDate = subscription.StartDate.HasValue && subscription.StartDate.Value > DateTime.MinValue
+            ? new DateTimeOffset(subscription.StartDate.Value, TimeSpan.Zero)
+            : DateTimeOffset.UtcNow;
+        
+        var endDate = subscription.EndDate.HasValue && subscription.EndDate.Value > DateTime.MinValue
+            ? new DateTimeOffset(subscription.EndDate.Value, TimeSpan.Zero)
+            : DateTimeOffset.UtcNow.AddMonths(1);
+
         SubscriptionResultExtension subscritpionDetail = new SubscriptionResultExtension
         {
             Id = subscription.AmpsubscriptionId,
@@ -161,8 +169,8 @@ public class SubscriptionService
             OfferId = subscription.AmpOfferId,
             Term = new TermResult
             {
-                StartDate = subscription.StartDate.GetValueOrDefault(),
-                EndDate = subscription.EndDate.GetValueOrDefault(),
+                StartDate = startDate,
+                EndDate = endDate,
             },
             Quantity = subscription.Ampquantity,
             Name = subscription.Name,
