@@ -3,7 +3,6 @@
 
 #
 # Powershell script to deploy the resources - Customer portal, Publisher portal and the Azure SQL Database
-#
 
 #.\Deploy.ps1 `
 # -WebAppNamePrefix "amp_saas_accelerator_<unique>" `
@@ -137,12 +136,16 @@ if ($SQLDatabaseName -eq "") {
     $SQLDatabaseName = $WebAppNamePrefix +"AMPSaaSDB"
 }
 
+
+
 if($KeyVault -eq "")
 {
 # User did not define KeyVault, so we will create one. 
 # We need to check if the KeyVault already exists or purge before going forward
 
    $KeyVault=$WebAppNamePrefix+"-kv"
+
+
 
    # Check if the KeyVault exists under resource group
    $kv_check=$(az keyvault show -n $KeyVault -g $ResourceGroupForDeployment) 2>$null    
@@ -186,7 +189,7 @@ if($WebAppNamePrefix.Length -gt 21) {
 }
 
 if(!($KeyVault -match "^[a-zA-Z][a-z0-9-]+$")) {
-    Throw "🛑 KeyVault name only allows alphanumeric and hyphens, but cannot start with a number or special character."
+    throw "Key vault name is not valid: $KeyVault"
     exit 1
 }
 
@@ -501,7 +504,7 @@ $Connection="Server=tcp:"+$ServerUriPrivate+";Database="+$SQLDatabaseName+";Trus
 
 Write-host "   🔵 Resource Group"
 Write-host "      ➡️ Create Resource Group"
-az group create --location $Location --name $ResourceGroupForDeployment --output $azCliOutput
+az group create --location $Location --name $ResourceGroupForDeployment --tags "Owner=gaurav" "Created By=shobhit" "Created For=vocanova" "Data Store Type=prod" "Environment=prod" "Project=vocanova" --output $azCliOutput
 
 Write-host "      ➡️ Create VNET and Subnet"
 az network vnet create --resource-group $ResourceGroupForDeployment --name $VnetName --address-prefixes "10.0.0.0/20" --output $azCliOutput
@@ -513,7 +516,7 @@ az network vnet subnet create --resource-group $ResourceGroupForDeployment --vne
 Write-host "      ➡️ Create Sql Server"
 $userId = az ad signed-in-user show --query id -o tsv 
 $userdisplayname = az ad signed-in-user show --query displayName -o tsv 
-az sql server create --name $SQLServerName --resource-group $ResourceGroupForDeployment --location $Location  --enable-ad-only-auth --external-admin-principal-type User --external-admin-name $userdisplayname --external-admin-sid $userId --output $azCliOutput
+az sql server create --name $SQLServerName --resource-group $ResourceGroupForDeployment --location $Location --tags "Owner=gaurav" "Created By=shobhit" "Created For=vocanova" "Data Store Type=prod" "Environment=prod" "Project=vocanova" --enable-ad-only-auth --external-admin-principal-type User --external-admin-name $userdisplayname --external-admin-sid $userId --output $azCliOutput
 Write-host "      ➡️ Set minimalTlsVersion to 1.2"
 az sql server update --name $SQLServerName --resource-group $ResourceGroupForDeployment --set minimalTlsVersion="1.2"
 Write-host "      ➡️ Add SQL Server Firewall rules"
@@ -525,11 +528,15 @@ if ($env:ACC_CLOUD -eq $null){
 }
 
 Write-host "      ➡️ Create SQL DB"
-az sql db create --resource-group $ResourceGroupForDeployment --server $SQLServerName --name $SQLDatabaseName  --edition Standard  --capacity 10 --zone-redundant false --output $azCliOutput
+az sql db create --resource-group $ResourceGroupForDeployment --server $SQLServerName --name $SQLDatabaseName --edition Standard  --capacity 10 --zone-redundant false --output $azCliOutput
 
 Write-host "   🔵 KeyVault"
 Write-host "      ➡️ Create KeyVault"
-az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --output $azCliOutput
+
+#az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --output $azCliOutput	; commented for rbac
+az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --tags "Owner=gaurav" "Created By=shobhit" "Created For=vocanova" "Data Store Type=prod" "Environment=prod" "Project=vocanova" --output $azCliOutput
+
+
 Write-host "      ➡️ Add Secrets"
 az keyvault secret set --vault-name $KeyVault --name ADApplicationSecret --value="$ADApplicationSecret" --output $azCliOutput
 az keyvault secret set --vault-name $KeyVault --name DefaultConnection --value $Connection --output $azCliOutput
@@ -539,11 +546,11 @@ az keyvault network-rule add --name $KeyVault --resource-group $ResourceGroupFor
 
 Write-host "   🔵 App Service Plan"
 Write-host "      ➡️ Create App Service Plan"
-az appservice plan create -g $ResourceGroupForDeployment -n $WebAppNameService --sku B1 --output $azCliOutput
+az appservice plan create -g $ResourceGroupForDeployment -n $WebAppNameService --sku B1 --output $azCliOutput --tags "Owner=gaurav" "Created By=shobhit" "Created For=vocanova" "Data Store Type=prod" "Environment=prod" "Project=vocanova" $azCliOutput
 
 Write-host "   🔵 Admin Portal WebApp"
 Write-host "      ➡️ Create Web App"
-az webapp create -g $ResourceGroupForDeployment -p $WebAppNameService -n $WebAppNameAdmin  --runtime dotnet:8 --output $azCliOutput
+az webapp create -g $ResourceGroupForDeployment -p $WebAppNameService -n $WebAppNameAdmin  --runtime dotnet:8 --tags "Owner=gaurav" "Created By=shobhit" "Created For=vocanova" "Data Store Type=prod" "Environment=prod" "Project=vocanova" --output $azCliOutput
 Write-host "      ➡️ Assign Identity"
 $WebAppNameAdminId = az webapp identity assign -g $ResourceGroupForDeployment  -n $WebAppNameAdmin --identities [system] --query principalId -o tsv
 Write-host "      ➡️ Setup access to KeyVault"
@@ -555,7 +562,7 @@ az webapp config set -g $ResourceGroupForDeployment -n $WebAppNameAdmin --always
 
 Write-host "   🔵 Customer Portal WebApp"
 Write-host "      ➡️ Create Web App"
-az webapp create -g $ResourceGroupForDeployment -p $WebAppNameService -n $WebAppNamePortal --runtime dotnet:8 --output $azCliOutput
+az webapp create -g $ResourceGroupForDeployment -p $WebAppNameService -n $WebAppNamePortal --runtime dotnet:8 --tags "Owner=gaurav" "Created By=shobhit" "Created For=vocanova" "Data Store Type=prod" "Environment=prod" "Project=vocanova" --output $azCliOutput
 Write-host "      ➡️ Assign Identity"
 $WebAppNamePortalId= az webapp identity assign -g $ResourceGroupForDeployment  -n $WebAppNamePortal --identities [system] --query principalId -o tsv 
 Write-host "      ➡️ Setup access to KeyVault"
